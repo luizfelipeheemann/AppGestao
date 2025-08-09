@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Backend API (Development)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: professional_management_api_dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=sqlite:///./data/professional_management_dev.db
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - REFRESH_TOKEN_EXPIRE_DAYS=30
+      - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    command: sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - dev_network
+
+  # Database for development (SQLite is used, but PostgreSQL available if needed)
+  postgres_dev:
+    image: postgres:15-alpine
+    container_name: professional_management_db_dev
+    environment:
+      - POSTGRES_DB=professional_management_dev
+      - POSTGRES_USER=dev_user
+      - POSTGRES_PASSWORD=dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - dev_network
+
+  # Redis for development
+  redis_dev:
+    image: redis:7-alpine
+    container_name: professional_management_redis_dev
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+    networks:
+      - dev_network
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  dev_network:
+    driver: bridge
+
