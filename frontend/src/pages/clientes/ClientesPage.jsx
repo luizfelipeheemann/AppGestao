@@ -21,9 +21,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useApi } from "../contexts/ApiContext";
+// CORRIGIDO
+import { useApi } from "../../contexts/ApiContext";
 import { toast } from "sonner";
-import LoadingSpinner from "../components/LoadingSpinner";
+// CORRIGIDO
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 // Funções utilitárias
 function formatarTelefone(valor) {
@@ -212,10 +214,11 @@ const ClientesPage = () => {
     }
     try {
       // O payload deve corresponder ao schema VendaPacoteCreate do backend
-      const payload = { pacote_id: pacoteParaVenderId };
+      const payload = { pacote_id: parseInt(pacoteParaVenderId) }; // Garante que o ID é um número
       await api.clientes.venderPacote(clienteSelecionado.id, payload);
       toast.success("Pacote vendido com sucesso!");
       setVenderPacoteModalOpen(false);
+      setPacoteParaVenderId(""); // Limpa a seleção
       abrirModalPacotes(clienteSelecionado); // Recarrega os pacotes do cliente
     } catch (error) {
       toast.error(error?.detail || "Erro ao vender pacote.");
@@ -300,38 +303,13 @@ const ClientesPage = () => {
                     <span className="text-sm">{cliente.email}</span>
                   </div>
                 )}
-                {cliente.etiquetas && (
+                {cliente.etiquetas && cliente.etiquetas.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {(Array.isArray(cliente.etiquetas)
-                      ? cliente.etiquetas
-                      : (() => {
-                          try {
-                            return JSON.parse(cliente.etiquetas);
-                          } catch {
-                            return [];
-                          }
-                        })()
-                    ).map((tag, i) => {
-                      const cores = {
-                        vip: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100",
-                        atualizada:
-                          "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-                        novo: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
-                      };
-
-                      const estilo =
-                        cores[tag?.toLowerCase?.()] ||
-                        "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-
-                      return (
-                        <span
-                          key={i}
-                          className={`${estilo} px-3 py-1 rounded-full text-xs font-medium`}
-                        >
-                          {tag}
-                        </span>
-                      );
-                    })}
+                    {cliente.etiquetas.map((tag, i) => (
+                      <Badge key={i} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
                 )}
               </div>

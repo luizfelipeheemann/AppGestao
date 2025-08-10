@@ -8,13 +8,18 @@ import {
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ApiProvider } from "./contexts/ApiContext";
-import LoginPage from "./pages/LoginPage";
-import Dashboard from "./pages/Dashboard";
-import ClientesPage from "./pages/ClientesPage";
-import ServicosPage from "./pages/ServicosPage";
-import AgendamentosPage from "./pages/AgendamentosPage";
-import PacotesPage from "./pages/PacotesPage"; // NOVO: Importado
-import RelatoriosPage from "./pages/RelatoriosPage"; // NOVO: Importado
+
+// --- IMPORTAÇÕES CORRIGIDAS ---
+// O caminho agora aponta para a subpasta correta dentro de 'pages'
+import LoginPage from "./pages/auth/LoginPage";
+import Dashboard from "./pages/dashboard/Dashboard";
+import ClientesPage from "./pages/clientes/ClientesPage";
+import ServicosPage from "./pages/servicos/ServicosPage";
+import AgendamentosPage from "./pages/agendamentos/AgendamentosPage";
+import PacotesPage from "./pages/pacotes/PacotesPage";
+import RelatoriosPage from "./pages/relatorios/RelatoriosPage";
+// --- FIM DAS IMPORTAÇÕES CORRIGIDAS ---
+
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
 import "./App.css";
@@ -65,7 +70,6 @@ function AppRoutes() {
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="servicos" element={<ServicosPage />} />
         <Route path="agendamentos" element={<AgendamentosPage />} />
-        {/* NOVAS ROTAS ADICIONADAS */}
         <Route path="pacotes" element={<PacotesPage />} />
         <Route path="relatorios" element={<RelatoriosPage />} />
       </Route>

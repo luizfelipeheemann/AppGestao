@@ -15,10 +15,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useApi } from "../contexts/ApiContext";
-import LoadingSpinner from "../components/LoadingSpinner";
+// CORRIGIDO
+import { useApi } from "../../contexts/ApiContext";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 const ServicosPage = () => {
+  // ... (o resto do código permanece o mesmo)
   const [servicos, setServicos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);

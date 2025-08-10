@@ -9,13 +9,16 @@ import {
 import StatCard from "@/components/dashboard/StatCard";
 import ClientesRecentes from "@/components/dashboard/ClientesRecentes";
 import AgendamentosProximos from "@/components/dashboard/AgendamentosProximos";
-import LoadingSpinner from "../components/LoadingSpinner";
+// CORRIGIDO
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
-import { useApi } from "../contexts/ApiContext";
+// CORRIGIDO
+import { useApi } from "../../contexts/ApiContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function Dashboard() {
+  // ... (o resto do código permanece o mesmo)
   const [stats, setStats] = useState({});
   const [recentClientes, setRecentClientes] = useState([]);
   const [proximosAgendamentos, setProximosAgendamentos] = useState([]);

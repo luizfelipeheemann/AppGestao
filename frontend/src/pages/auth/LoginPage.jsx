@@ -10,13 +10,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "../../contexts/AuthContext"; // Corrija o caminho se necessário
-import LoadingSpinner from "../../components/LoadingSpinner"; // Corrija o caminho se necessário
+import { useAuth } from "../../contexts/AuthContext";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+
+  // --- INÍCIO DA MODIFICAÇÃO ---
+
+  // Lê as variáveis de ambiente do Vite. Se não existirem (em produção), usa uma string vazia.
+  const initialEmail = import.meta.env.VITE_DEV_USER_EMAIL || "";
+  const initialPassword = import.meta.env.VITE_DEV_USER_PASSWORD || "";
+
+  // Inicializa o estado com os valores lidos para preencher o formulário
+  const [email, setEmail] = useState(initialEmail);
+  const [senha, setSenha] = useState(initialPassword);
+
+  // --- FIM DA MODIFICAÇÃO ---
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");

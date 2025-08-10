@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  Calendar,
-  Clock,
-  User,
-  Edit,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { Plus, Calendar, User, Edit, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,9 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useApi } from "../contexts/ApiContext";
+// CORRIGIDO
+import { useApi } from "../../contexts/ApiContext";
 import { toast } from "sonner";
-import LoadingSpinner from "../components/LoadingSpinner";
+// CORRIGIDO
+import LoadingSpinner from "../../components/LoadingSpinner";
+import { useNavigate } from "react-router-dom";
 
 const AgendamentosPage = () => {
   const [agendamentos, setAgendamentos] = useState([]);
@@ -39,7 +34,8 @@ const AgendamentosPage = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [agendamentoParaConcluir, setAgendamentoParaConcluir] = useState(null);
+  const [agendamentoParaAcao, setAgendamentoParaAcao] = useState(null); // Para concluir ou cancelar
+  const [acao, setAcao] = useState(""); // 'concluir' ou 'cancelar'
   const [form, setForm] = useState({
     cliente_id: "",
     servico_id: "",
@@ -50,16 +46,11 @@ const AgendamentosPage = () => {
   });
   const [erros, setErros] = useState({});
   const api = useApi();
-
-  useEffect(() => {
-    loadInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const navigate = useNavigate();
 
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      // Assumindo que você terá esses métodos no seu ApiContext
       const [agendamentosData, clientesData, servicosData] = await Promise.all([
         api.agendamentos.getAll(),
         api.clientes.getAll(),
@@ -67,7 +58,7 @@ const AgendamentosPage = () => {
       ]);
       setAgendamentos(agendamentosData);
       setClientes(clientesData);
-      setServicos(servicosData);
+      setServicos(servicosData.filter((s) => s.ativo));
     } catch (error) {
       toast.error("Erro ao carregar dados. Verifique a API.");
       console.error(error);
@@ -75,6 +66,11 @@ const AgendamentosPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetForm = () => {
     setEditando(null);
@@ -90,21 +86,25 @@ const AgendamentosPage = () => {
   };
 
   const abrirNovo = () => {
-    resetForm();
-    setModalOpen(true);
+    navigate("/agendamentos/novo");
   };
 
   const abrirEditar = (agendamento) => {
     setEditando(agendamento);
+    // Ajuste para o fuso horário local no input datetime-local
+    const toLocalISOString = (date) => {
+      const tzoffset = new Date().getTimezoneOffset() * 60000; //offset in milliseconds
+      const localISOTime = new Date(new Date(date) - tzoffset)
+        .toISOString()
+        .slice(0, -1);
+      return localISOTime.slice(0, 16);
+    };
+
     setForm({
-      cliente_id: agendamento.cliente.id,
-      servico_id: agendamento.servico.id,
-      data_hora_inicio: new Date(agendamento.data_hora_inicio)
-        .toISOString()
-        .slice(0, 16),
-      data_hora_fim: new Date(agendamento.data_hora_fim)
-        .toISOString()
-        .slice(0, 16),
+      cliente_id: String(agendamento.cliente.id),
+      servico_id: String(agendamento.servico.id),
+      data_hora_inicio: toLocalISOString(agendamento.data_hora_inicio),
+      data_hora_fim: toLocalISOString(agendamento.data_hora_fim),
       status: agendamento.status,
       observacoes: agendamento.observacoes || "",
     });
@@ -115,21 +115,27 @@ const AgendamentosPage = () => {
   const handleFormChange = (name, value) => {
     const newForm = { ...form, [name]: value };
 
-    // Calcula a data de fim automaticamente ao mudar o serviço ou a data de início
     if (
       (name === "servico_id" || name === "data_hora_inicio") &&
       newForm.servico_id &&
       newForm.data_hora_inicio
     ) {
       const servicoSelecionado = servicos.find(
-        (s) => s.id === newForm.servico_id
+        (s) => s.id === parseInt(newForm.servico_id)
       );
-      if (servicoSelecionado && servicoSelecionado.duracao_minutos) {
+      if (servicoSelecionado?.duracao_minutos) {
         const dataInicio = new Date(newForm.data_hora_inicio);
         const dataFim = new Date(
           dataInicio.getTime() + servicoSelecionado.duracao_minutos * 60000
         );
-        newForm.data_hora_fim = dataFim.toISOString().slice(0, 16);
+        const toLocalISOString = (date) => {
+          const tzoffset = new Date().getTimezoneOffset() * 60000;
+          const localISOTime = new Date(date - tzoffset)
+            .toISOString()
+            .slice(0, -1);
+          return localISOTime.slice(0, 16);
+        };
+        newForm.data_hora_fim = toLocalISOString(dataFim);
       }
     }
     setForm(newForm);
@@ -141,8 +147,6 @@ const AgendamentosPage = () => {
     if (!form.servico_id) novoErros.servico_id = "Selecione um serviço.";
     if (!form.data_hora_inicio)
       novoErros.data_hora_inicio = "Data e hora de início são obrigatórios.";
-    if (!form.data_hora_fim)
-      novoErros.data_hora_fim = "Data e hora de fim são obrigatórios.";
     setErros(novoErros);
     return Object.keys(novoErros).length === 0;
   };
@@ -151,48 +155,46 @@ const AgendamentosPage = () => {
     e.preventDefault();
     if (!validar()) return;
 
-    // Converte as datas para o formato ISO completo antes de enviar
     const payload = {
       ...form,
+      cliente_id: parseInt(form.cliente_id),
+      servico_id: parseInt(form.servico_id),
       data_hora_inicio: new Date(form.data_hora_inicio).toISOString(),
       data_hora_fim: new Date(form.data_hora_fim).toISOString(),
     };
 
     try {
-      if (editando) {
-        await api.agendamentos.update(editando.id, payload);
-        toast.success("Agendamento atualizado com sucesso!");
-      } else {
-        await api.agendamentos.create(payload);
-        toast.success("Agendamento criado com sucesso!");
-      }
+      await api.agendamentos.update(editando.id, payload);
+      toast.success("Agendamento atualizado com sucesso!");
       setModalOpen(false);
-      loadInitialData(); // Recarrega todos os dados
+      loadInitialData();
     } catch (error) {
       toast.error(error?.detail || "Erro ao salvar agendamento.");
     }
   };
 
-  const handleCancelarAgendamento = async (agendamento) => {
-    try {
-      await api.agendamentos.update(agendamento.id, { status: "cancelado" });
-      toast.success("Agendamento cancelado!");
-      loadInitialData();
-    } catch (error) {
-      toast.error(error?.detail || "Erro ao cancelar agendamento.");
-    }
+  const pedirConfirmacaoAcao = (agendamento, tipoAcao) => {
+    setAgendamentoParaAcao(agendamento);
+    setAcao(tipoAcao);
   };
 
-  const handleConcluirAgendamento = async () => {
-    if (!agendamentoParaConcluir) return;
+  const confirmarAcao = async () => {
+    if (!agendamentoParaAcao || !acao) return;
     try {
-      // Chama o novo endpoint específico para concluir
-      await api.agendamentos.concluir(agendamentoParaConcluir.id);
-      toast.success("Agendamento concluído com sucesso!");
-      setAgendamentoParaConcluir(null);
+      if (acao === "concluir") {
+        await api.agendamentos.concluir(agendamentoParaAcao.id);
+        toast.success("Agendamento concluído com sucesso!");
+      } else if (acao === "cancelar") {
+        await api.agendamentos.update(agendamentoParaAcao.id, {
+          status: "cancelado",
+        });
+        toast.success("Agendamento cancelado!");
+      }
+      setAgendamentoParaAcao(null);
+      setAcao("");
       loadInitialData();
     } catch (error) {
-      toast.error(error?.detail || "Erro ao concluir agendamento.");
+      toast.error(error?.detail || `Erro ao ${acao} agendamento.`);
     }
   };
 
@@ -204,23 +206,21 @@ const AgendamentosPage = () => {
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(dateString));
+
   const formatCurrency = (value) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value);
-  const getStatusBadgeVariant = (status) => {
-    const variants = {
+
+  const getStatusBadgeVariant = (status) =>
+    ({
       confirmado: "default",
       concluido: "success",
       cancelado: "destructive",
-    };
-    return variants[status] || "secondary";
-  };
+    }[status] || "secondary");
 
-  if (loading) {
-    return <LoadingSpinner text="Carregando agendamentos..." />;
-  }
+  if (loading) return <LoadingSpinner text="Carregando agendamentos..." />;
 
   return (
     <div className="space-y-6">
@@ -251,7 +251,6 @@ const AgendamentosPage = () => {
                   <p className="text-muted-foreground">{ag.servico.nome}</p>
                 </div>
               </div>
-
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
                 <div className="text-left sm:text-center">
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -262,7 +261,6 @@ const AgendamentosPage = () => {
                     {formatCurrency(ag.servico.preco)}
                   </p>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <Badge variant={getStatusBadgeVariant(ag.status)}>
                     {ag.status}
@@ -280,17 +278,17 @@ const AgendamentosPage = () => {
                       variant="ghost"
                       size="icon"
                       title="Marcar como Concluído"
-                      onClick={() => setAgendamentoParaConcluir(ag)}
+                      onClick={() => pedirConfirmacaoAcao(ag, "concluir")}
                     >
                       <CheckCircle className="h-5 w-5 text-green-600" />
                     </Button>
                   )}
-                  {ag.status !== "cancelado" && (
+                  {ag.status !== "cancelado" && ag.status !== "concluido" && (
                     <Button
                       variant="ghost"
                       size="icon"
                       title="Cancelar Agendamento"
-                      onClick={() => handleCancelarAgendamento(ag)}
+                      onClick={() => pedirConfirmacaoAcao(ag, "cancelar")}
                     >
                       <XCircle className="h-5 w-5 text-red-600" />
                     </Button>
@@ -310,13 +308,11 @@ const AgendamentosPage = () => {
         </div>
       )}
 
-      {/* Modal para adicionar/editar agendamento */}
+      {/* Modal para editar agendamento */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editando ? "Editar Agendamento" : "Novo Agendamento"}
-            </DialogTitle>
+            <DialogTitle>Editar Agendamento</DialogTitle>
           </DialogHeader>
           <form onSubmit={salvar} className="space-y-4 pt-4">
             <div>
@@ -329,7 +325,7 @@ const AgendamentosPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.nome}
                     </SelectItem>
                   ))}
@@ -349,7 +345,7 @@ const AgendamentosPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {servicos.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
+                    <SelectItem key={s.id} value={String(s.id)}>
                       {s.nome} - {formatCurrency(s.preco)}
                     </SelectItem>
                   ))}
@@ -405,40 +401,56 @@ const AgendamentosPage = () => {
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Agendamento</Button>
+              <Button type="submit">Salvar Alterações</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* NOVO: Modal de confirmação para concluir agendamento */}
+      {/* Modal de confirmação para concluir/cancelar */}
       <Dialog
-        open={!!agendamentoParaConcluir}
-        onOpenChange={() => setAgendamentoParaConcluir(null)}
+        open={!!agendamentoParaAcao}
+        onOpenChange={() => setAgendamentoParaAcao(null)}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Concluir Atendimento</DialogTitle>
+            <DialogTitle>
+              {acao === "concluir"
+                ? "Concluir Atendimento"
+                : "Cancelar Agendamento"}
+            </DialogTitle>
             <DialogDescription>
-              Você confirma a conclusão do atendimento para{" "}
-              <span className="font-bold">
-                {agendamentoParaConcluir?.cliente.nome}
-              </span>
-              ?
-              <br />
-              Esta ação irá debitar o saldo de pacotes do cliente, se houver, ou
-              gerar uma nova cobrança.
+              {acao === "concluir" ? (
+                <>
+                  Você confirma a conclusão do atendimento para{" "}
+                  <span className="font-bold">
+                    {agendamentoParaAcao?.cliente.nome}
+                  </span>
+                  ? Esta ação irá debitar o saldo de pacotes ou gerar cobrança.
+                </>
+              ) : (
+                <>
+                  Tem certeza que deseja cancelar o agendamento de{" "}
+                  <span className="font-bold">
+                    {agendamentoParaAcao?.cliente.nome}
+                  </span>
+                  ?
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setAgendamentoParaConcluir(null)}
+              onClick={() => setAgendamentoParaAcao(null)}
             >
-              Cancelar
+              Voltar
             </Button>
-            <Button onClick={handleConcluirAgendamento}>
-              Confirmar Conclusão
+            <Button
+              variant={acao === "cancelar" ? "destructive" : "default"}
+              onClick={confirmarAcao}
+            >
+              Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>

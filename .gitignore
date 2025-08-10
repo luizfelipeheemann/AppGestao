@@ -68,6 +68,8 @@ venv.bak/
 # Outros
 .DS_Store
 database.txt
+frontend/.env.local
+
 
 # Dependências do Node.js
 frontend/node_modules/

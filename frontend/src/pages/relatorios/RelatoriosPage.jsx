@@ -26,9 +26,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useApi } from "../contexts/ApiContext";
 import { toast } from "sonner";
-import LoadingSpinner from "../components/LoadingSpinner";
+
+// --- IMPORTAÇÕES CORRIGIDAS ---
+// O caminho agora sobe dois níveis para encontrar as pastas 'contexts' e 'components'
+import { useApi } from "../../contexts/ApiContext";
+import LoadingSpinner from "../../components/LoadingSpinner";
+// --- FIM DAS IMPORTAÇÕES CORRIGIDAS ---
 
 const RelatoriosPage = () => {
   const [relatorio, setRelatorio] = useState([]);
@@ -45,7 +49,8 @@ const RelatoriosPage = () => {
     // Carrega a lista de clientes para o filtro
     const loadClientes = async () => {
       try {
-        const clientesData = await api.clientes.getAll();
+        // A API de clientes agora é chamada através do hook useApi
+        const clientesData = await api.get("/clientes");
         setClientes(clientesData);
       } catch (error) {
         toast.error("Erro ao carregar lista de clientes.");
@@ -62,7 +67,10 @@ const RelatoriosPage = () => {
     setLoading(true);
     setRelatorio([]);
     try {
-      const data = await api.relatorios.getConsumoPacotes(filters);
+      // A API de relatórios agora é chamada através do hook useApi
+      const data = await api.get("/relatorios/consumo-pacotes", {
+        params: filters,
+      });
       setRelatorio(data);
       if (data.length === 0) {
         toast.info("Nenhum dado encontrado para os filtros selecionados.");

@@ -31,8 +31,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useApi } from "../contexts/ApiContext";
-import LoadingSpinner from "../components/LoadingSpinner";
+// CORREÇÃO 1: Ajuste no caminho do context da API
+import { useApi } from "../../contexts/ApiContext";
+// CORREÇÃO 2: Ajuste no caminho do componente de loading
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 const PacotesPage = () => {
   const [pacotes, setPacotes] = useState([]);
@@ -212,7 +214,7 @@ const PacotesPage = () => {
 
       const servicoCond =
         filtroServicoId === "todos" ||
-        p.servicos.some((s) => s.id === filtroServicoId);
+        p.servicos.some((s) => s.id === parseInt(filtroServicoId)); // Adicionado parseInt para garantir a comparação correta
 
       return statusCond && servicoCond;
     });

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+// CORRIGIDO
 import { useApi } from "../../contexts/ApiContext";
 import { toast } from "sonner";
+// CORRIGIDO
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   Select,
@@ -11,9 +13,11 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // Importar useNavigate
 
 export default function AgendamentoInteligente() {
   const api = useApi();
+  const navigate = useNavigate(); // Instanciar useNavigate
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState("");
   const [data, setData] = useState("");
@@ -38,7 +42,7 @@ export default function AgendamentoInteligente() {
       setSugestoes(resp.horarios);
       setDuracao(resp.duracao_minutos);
     } catch (err) {
-      toast.error(err.message || "Erro ao buscar sugestões.");
+      toast.error(err.detail || "Erro ao buscar sugestões.");
       setSugestoes([]);
       setDuracao(null);
     } finally {
@@ -50,13 +54,13 @@ export default function AgendamentoInteligente() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Agendamento Inteligente</h1>
       <div className="flex gap-2 items-center">
-        <Select onValueChange={setClienteId} value={clienteId}>
+        <Select onValueChange={(val) => setClienteId(val)} value={clienteId}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione cliente" />
           </SelectTrigger>
           <SelectContent>
             {clientes.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
+              <SelectItem key={c.id} value={String(c.id)}>
                 {c.nome}
               </SelectItem>
             ))}
@@ -73,9 +77,11 @@ export default function AgendamentoInteligente() {
 
       {loading && <LoadingSpinner text="Buscando horários..." />}
 
-      {sugestoes.length > 0 && (
+      {sugestoes.length > 0 && !loading && (
         <div>
-          <h2>Horários disponíveis (duração: {duracao} min)</h2>
+          <h2 className="font-semibold mt-4 mb-2">
+            Horários disponíveis (duração: {duracao} min)
+          </h2>
           <ul className="space-y-2">
             {sugestoes.map((h) => (
               <li
@@ -83,7 +89,7 @@ export default function AgendamentoInteligente() {
                 className="flex items-center justify-between p-2 border rounded"
               >
                 <div className="flex items-center gap-2">
-                  <Calendar />
+                  <Calendar className="h-4 w-4" />
                   {new Intl.DateTimeFormat("pt-BR", {
                     day: "2-digit",
                     month: "2-digit",
@@ -94,8 +100,8 @@ export default function AgendamentoInteligente() {
                 <Button
                   variant="secondary"
                   onClick={() =>
-                    api.navigate(
-                      `/agendamentos?cliente=${clienteId}&inicio=${h}`
+                    navigate(
+                      `/agendamentos/novo?clienteId=${clienteId}&dataHoraInicio=${h}`
                     )
                   }
                 >
@@ -107,8 +113,10 @@ export default function AgendamentoInteligente() {
         </div>
       )}
 
-      {sugestoes.length === 0 && !loading && (
-        <p>Nenhuma sugestão encontrada.</p>
+      {sugestoes.length === 0 && !loading && data && (
+        <p className="mt-4">
+          Nenhuma sugestão encontrada para a data selecionada.
+        </p>
       )}
     </div>
   );
