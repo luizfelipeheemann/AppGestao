@@ -12,13 +12,15 @@ class ServicoCreate(ServicoBase):
     pass
 
 class ServicoUpdate(BaseModel):
-    nome: Optional[str]
+    nome: Optional[str] = None
     duracao_minutos: Optional[int] = Field(None, gt=0)
     preco: Optional[float] = Field(None, ge=0.0)
-    ativo: Optional[bool]
+    ativo: Optional[bool] = None
 
-class Servico(ServicoBase):
+# Renomeado de 'Servico' para 'ServicoOut' para padronização
+class ServicoOut(ServicoBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        # Renomeado de 'orm_mode' para 'from_attributes' para Pydantic V2
+        from_attributes = True

@@ -1,33 +1,18 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import List, Optional
-import re
-from .shared import BaseModelWithId
+# Código para o arquivo: backend/models/cliente.py
+import uuid
+from sqlalchemy import Column, String, Text, Index
+from sqlalchemy.orm import relationship
+from backend.core.database import Base
 
-class ClienteBase(BaseModel):
-    nome: str = Field(..., min_length=2, max_length=100)
-    telefone: str = Field(..., min_length=10, max_length=20)
-    email: EmailStr
-    observacoes: Optional[str] = Field(None, max_length=1000)
-    etiquetas: Optional[List[str]] = []
+class Cliente(Base):
+    __tablename__ = "clientes"
 
-class ClienteCreate(ClienteBase):
-    pass
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    nome = Column(String(100), nullable=False, index=True)
+    telefone = Column(String(20), nullable=False)
+    email = Column(String(100), nullable=True, index=True)
+    observacoes = Column(Text, nullable=True)
+    etiquetas = Column(Text, nullable=True)
 
-class ClienteUpdate(BaseModel):
-    nome: Optional[str] = Field(None, min_length=2, max_length=100)
-    telefone: Optional[str] = Field(None, min_length=10, max_length=20)
-    email: Optional[EmailStr] = None
-    observacoes: Optional[str] = Field(None, max_length=1000)
-    etiquetas: Optional[List[str]] = None
-
-    @field_validator('telefone')
-    @classmethod
-    def validate_telefone(cls, v):
-        if v is not None:
-            digits_only = re.sub(r'\D', '', v)
-            if len(digits_only) < 10 or len(digits_only) > 15:
-                raise ValueError('Telefone deve ter entre 10 e 15 dígitos')
-        return v
-
-class Cliente(ClienteBase, BaseModelWithId):
-    pass
+    agendamentos = relationship("Agendamento", back_populates="cliente", cascade="all, delete-orphan")
+    pacotes_adquiridos = relationship("ClientePacote", back_populates="cliente", cascade="all, delete-orphan")

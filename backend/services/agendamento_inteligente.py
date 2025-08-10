@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from models import Agendamento as AgendamentoDB, Cliente as ClienteDB
-from schemas import AgendamentoSugestao, ErroAgendamento
 from uuid import UUID
+
+from backend.models.agendamento import Agendamento as AgendamentoDB
+from backend.models.cliente import Cliente as ClienteDB
+from backend.schemas.agendamento_inteligente import AgendamentoSugestao, ErroAgendamento
 
 def obter_ultimo_agendamento(cliente_id: UUID, db: Session):
     return db.query(AgendamentoDB).filter(

@@ -1,26 +1,25 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from uuid import UUID
-from datetime import datetime
-from .shared import BaseModelWithId
+# Código para: backend/models/agendamento.py
+import uuid
+from sqlalchemy import Column, String, DateTime, ForeignKey, Index
+from sqlalchemy.orm import relationship
+from backend.core.database import Base
 
-class AgendamentoBase(BaseModel):
-    cliente_id: UUID
-    servico_id: UUID
-    data_hora_inicio: datetime
-    observacoes: Optional[str] = None
-    status: Optional[str] = "confirmado"
+class Agendamento(Base):
+    __tablename__ = "agendamentos"
 
-class AgendamentoCreate(AgendamentoBase):
-    pass
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    cliente_id = Column(String(36), ForeignKey("clientes.id"), nullable=False, index=True)
+    servico_id = Column(String(36), ForeignKey("servicos.id"), nullable=False, index=True)
+    data_hora_inicio = Column(DateTime(timezone=True), nullable=False, index=True)
+    data_hora_fim = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(20), default="confirmado", index=True)
+    observacoes = Column(String, nullable=True)
 
-class AgendamentoUpdate(BaseModel):
-    cliente_id: Optional[UUID] = None
-    servico_id: Optional[UUID] = None
-    data_hora_inicio: Optional[datetime] = None
-    observacoes: Optional[str] = None
-    status: Optional[str] = None
+    # Usando strings para quebrar o ciclo de importação
+    cliente = relationship("Cliente", back_populates="agendamentos")
+    servico = relationship("Servico", back_populates="agendamentos")
+    pagamentos = relationship("Pagamento", back_populates="agendamento", cascade="all, delete-orphan")
 
-class Agendamento(AgendamentoBase, BaseModelWithId):
-    cliente: Optional['Cliente']
-    servico: Optional['Servico']
+    __table_args__ = (
+        Index('ix_agendamentos_data_hora_inicio', 'data_hora_inicio'),
+    )

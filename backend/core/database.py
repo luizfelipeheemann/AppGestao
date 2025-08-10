@@ -4,11 +4,11 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import scoped_session
 import os
+from config import settings # Importa as configurações
 
-# Usar SQLite como padrão (pode ser trocado por PostgreSQL ou outro)
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+# Usa a URL do banco de dados a partir do arquivo de configuração
+DATABASE_URL = settings.DATABASE_URL
 
-# Configurações específicas para SQLite
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 
 engine = create_engine(
@@ -24,9 +24,6 @@ class CustomBase:
     def __tablename__(cls):
         return cls.__name__.lower()
 
-    def __repr__(self):
-        return f"<{self.__class__.__name__}({self.__dict__})>"
-
 Base = declarative_base(cls=CustomBase)
 
 def get_db():
@@ -37,5 +34,6 @@ def get_db():
         db.close()
 
 def init_database():
-    import backend.models  # Importa os models para criar as tabelas
+    # A importação foi removida para quebrar o ciclo.
+    # Os modelos serão importados em outro lugar antes desta função ser chamada.
     Base.metadata.create_all(bind=engine)

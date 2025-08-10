@@ -1,38 +1,44 @@
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 from uuid import UUID
 from datetime import datetime
-from database import get_db
-from models import Agendamento as AgendamentoDB, ClientePacote as ClientePacoteDB, PacoteServico as PacoteDB, Pagamento as PagamentoDB
-from schemas.agendamentos import AgendamentoCreate, AgendamentoUpdate
 from typing import List
 
-def criar_agendamento(data: AgendamentoCreate) -> AgendamentoDB:
-    db = next(get_db())
-    obj = AgendamentoDB(**data.dict())
+from backend.core.database import get_db
+from backend.models.agendamento import Agendamento as AgendamentoDB
+from backend.models.cliente_pacote import ClientePacote as ClientePacoteDB
+from backend.models.pacote import PacoteServico as PacoteDB
+from backend.models.pagamento import Pagamento as PagamentoDB
+from backend.schemas.agendamentos import AgendamentoCreate, AgendamentoUpdate
+
+def criar_agendamento_srv(ag: AgendamentoCreate, db: Session) -> AgendamentoDB:
+    # Usando .model_dump() em vez de .dict() para compatibilidade com Pydantic V2
+    obj = AgendamentoDB(**ag.model_dump())
     db.add(obj)
     db.commit()
     db.refresh(obj)
     return obj
 
-def listar_agendamentos() -> List[AgendamentoDB]:
-    db = next(get_db())
+def listar_agendamentos_srv(db: Session) -> List[AgendamentoDB]:
     return db.query(AgendamentoDB).order_by(AgendamentoDB.data_hora_inicio.desc()).all()
 
-def atualizar_agendamento(id: UUID, data: AgendamentoUpdate) -> AgendamentoDB:
-    db = next(get_db())
+def atualizar_agendamento_srv(id: UUID, data: AgendamentoUpdate, db: Session) -> AgendamentoDB:
     obj = db.query(AgendamentoDB).get(str(id))
     if not obj:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
     if data.status == 'concluido':
         raise HTTPException(status_code=400, detail="Use PATCH /agendamentos/{id}/concluir para concluir")
-    for k, v in data.dict(exclude_unset=True).items():
-        setattr(obj, k, v)
+    
+    # Usando .model_dump() em vez de .dict()
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(obj, key, value)
+        
     db.commit()
     db.refresh(obj)
     return obj
 
-def concluir_agendamento(id: UUID) -> AgendamentoDB:
-    db = next(get_db())
+def concluir_agendamento_srv(id: UUID, db: Session) -> AgendamentoDB:
     obj = db.query(AgendamentoDB).get(str(id))
     if not obj:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
@@ -60,6 +66,7 @@ def concluir_agendamento(id: UUID) -> AgendamentoDB:
             agendamento_id=obj.id, valor=obj.servico.preco, metodo_pagamento="pix",
             status="pendente", descricao=f"Cobrança pelo serviço: {obj.servico.nome}"
         )
+        
     db.add(pagamento)
     obj.status = 'concluido'
     db.commit()

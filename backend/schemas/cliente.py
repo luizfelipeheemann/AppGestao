@@ -1,3 +1,4 @@
+# Código para o arquivo: backend/schemas/clientes.py
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 from uuid import UUID

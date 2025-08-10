@@ -1,14 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import List
-from services.agendamentos import criar_agendamento_srv, listar_agendamentos_srv, atualizar_agendamento_srv, concluir_agendamento_srv
-from schemas.agendamentos import AgendamentoCreate, AgendamentoUpdate, AgendamentoOut
+
+from backend.services.agendamentos import criar_agendamento_srv, listar_agendamentos_srv, atualizar_agendamento_srv, concluir_agendamento_srv
+# --- CORREÇÃO AQUI ---
+# O nome da classe de saída é 'Agendamento', não 'AgendamentoOut'.
+from backend.schemas.agendamentos import AgendamentoCreate, AgendamentoUpdate, Agendamento as AgendamentoOut
+# --- FIM DA CORREÇÃO ---
 from utils.exception_handler import safe_route
-from database import get_db
+from backend.core.database import get_db
 
 router = APIRouter(prefix="/agendamentos", tags=["Agendamentos"])
 
+# Usamos o alias 'AgendamentoOut' que criamos na importação para o response_model
 @router.post("", response_model=AgendamentoOut, status_code=status.HTTP_201_CREATED)
 @safe_route("criar_agendamento")
 def criar_agendamento(ag: AgendamentoCreate, db: Session = Depends(get_db)):
