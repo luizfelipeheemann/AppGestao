@@ -1,4 +1,21 @@
-# Código para: backend/main.py
+# --- INÍCIO DO BLOCO DE CORREÇÃO DE IMPORTAÇÃO ---
+import sys
+import os
+
+# Pega o caminho absoluto do diretório 'app' (onde este arquivo está)
+# Ex: /mnt/c/AppGestao/backend/app
+app_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Pega o diretório pai, que é a pasta 'backend'
+# Ex: /mnt/c/AppGestao/backend
+backend_dir = os.path.dirname(app_dir)
+
+# Adiciona a pasta 'backend' ao sys.path se ela ainda não estiver lá.
+# Isso garante que o Python encontre o módulo 'app'.
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
+# --- FIM DO BLOCO DE CORREÇÃO DE IMPORTAÇÃO ---
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
