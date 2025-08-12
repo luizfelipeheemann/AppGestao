@@ -18,6 +18,23 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
 
   useEffect(() => {
+    // ===== BYPASS TEMPORÁRIO PARA DESENVOLVIMENTO =====
+    const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
+    
+    if (skipAuth) {
+      // Simular usuário logado para desenvolvimento
+      setUser({
+        id: "dev-user",
+        nome: "Usuário Desenvolvimento",
+        email: "dev@teste.com"
+      });
+      setIsAuthenticated(true);
+      setLoading(false);
+      console.log("🚀 MODO DESENVOLVIMENTO: Login automático ativado");
+      return;
+    }
+    // ===== FIM DO BYPASS =====
+
     const savedToken = localStorage.getItem("access_token");
     if (savedToken) {
       setToken(savedToken);
@@ -90,6 +107,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // ===== BYPASS: Não fazer logout em modo desenvolvimento =====
+    const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
+    if (skipAuth) {
+      toast.info("Logout desabilitado em modo desenvolvimento");
+      return;
+    }
+    // ===== FIM DO BYPASS =====
+
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     setUser(null);
@@ -120,6 +145,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const makeAuthenticatedRequest = async (url, options = {}) => {
+    // ===== BYPASS: Simular requisições em modo desenvolvimento =====
+    const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
+    if (skipAuth) {
+      console.log(`🚀 MODO DEV: Simulando requisição para ${url}`);
+      // Retornar dados mockados para desenvolvimento
+      return { message: "Dados simulados para desenvolvimento" };
+    }
+    // ===== FIM DO BYPASS =====
+
     let tokenToUse = token || localStorage.getItem("access_token");
     if (!tokenToUse) throw new Error("Nenhum token de acesso disponível");
 
@@ -166,3 +200,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
