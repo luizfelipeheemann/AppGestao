@@ -4,12 +4,20 @@ from typing import Any
 # --- Importações Corrigidas ---
 # Todas as importações agora são absolutas a partir da raiz do projeto.
 from backend.services.auth import authenticate_user, create_access_token, create_refresh_token
+# ===== ADICIONADO: Import da função de criação de usuário =====
+from backend.services.auth import create_user
+# ===== FIM DA ADIÇÃO =====
 from backend.auth.security import get_current_user # Assumindo que get_current_user está em auth/security.py
 from backend.auth.rate_limiter import auth_rate_limiter # Assumindo que o rate limiter está em auth/rate_limiter.py
-from backend.schemas.usuario import UsuarioLogin, Token
+# ===== MODIFICADO: Importar novos schemas =====
+from backend.schemas.auth import UsuarioLogin, UsuarioRegister, Token, UsuarioCreated
+# ===== FIM DA MODIFICAÇÃO =====
 from utils.exception_handler import safe_route
 from backend.core.database import get_db # Importa o get_db
 from sqlalchemy.orm import Session # Importa a Session
+# ===== ADICIONADO: Import do modelo de usuário =====
+from backend.models.usuario import Usuario as UsuarioDB
+# ===== FIM DA ADIÇÃO =====
 # --- Fim das Importações Corrigidas ---
 
 router = APIRouter() # O prefixo e as tags já são definidos no __init__.py das rotas
@@ -40,6 +48,38 @@ async def login(
     refresh_token = create_refresh_token(data={"sub": user.email, "user_id": str(user.id)})
     
     return Token(access_token=access_token, refresh_token=refresh_token)
+
+# ===== ADICIONADO: Endpoint de cadastro =====
+@router.post("/register", response_model=UsuarioCreated, status_code=status.HTTP_201_CREATED)
+@safe_route("register")
+async def register(
+    user_data: UsuarioRegister,
+    db: Session = Depends(get_db)
+) -> Any:
+    # Validar se as senhas coincidem
+    if user_data.senha != user_data.confirmar_senha:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="As senhas não coincidem"
+        )
+    
+    # Verificar se o email já existe
+    existing_user = db.query(UsuarioDB).filter(UsuarioDB.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email já cadastrado"
+        )
+    
+    # Criar o usuário
+    new_user = create_user(db=db, user_data=user_data)
+    
+    return UsuarioCreated(
+        id=str(new_user.id),
+        nome=new_user.nome,
+        email=new_user.email
+    )
+# ===== FIM DA ADIÇÃO =====
 
 @router.get("/me", response_model=dict)
 @safe_route("me")

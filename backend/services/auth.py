@@ -7,6 +7,9 @@ import jwt
 # --- Importações Corrigidas ---
 from config import settings
 from backend.models.usuario import Usuario as UsuarioDB
+# ===== ADICIONADO: Import do schema de registro =====
+from backend.schemas.auth import UsuarioRegister
+# ===== FIM DA ADIÇÃO =====
 # --- Fim das Importações Corrigidas ---
 
 # As constantes agora usam os nomes padronizados do nosso config.py
@@ -25,6 +28,30 @@ def authenticate_user(db: Session, email: str, senha: str) -> Optional[UsuarioDB
     if not user or not user.verify_password(senha):
         return None
     return user
+
+# ===== ADICIONADO: Função para criar usuário =====
+def create_user(db: Session, user_data: UsuarioRegister) -> UsuarioDB:
+    """
+    Cria um novo usuário no banco de dados.
+    """
+    # Criar hash da senha
+    senha_hash = UsuarioDB.get_password_hash(user_data.senha)
+    
+    # Criar objeto do usuário
+    db_user = UsuarioDB(
+        nome=user_data.nome,
+        email=user_data.email,
+        senha_hash=senha_hash,
+        ativo=True
+    )
+    
+    # Salvar no banco
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    return db_user
+# ===== FIM DA ADIÇÃO =====
 
 def create_access_token(data: dict) -> str:
     """Cria um novo token de acesso."""
